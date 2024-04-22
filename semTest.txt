@@ -1,0 +1,87 @@
+Class: Pizza
+
+    SubClassOf:
+        hasBase some PizzaBase,
+        hasCaloricContent some xsd:integer
+
+    DisjointClasses:
+        PizzaBase, PizzaTopping
+
+    Individuals:
+        CustomPizza1,
+        CustomPizza2
+
+Class: Evaluated
+
+    EquivalentTo:
+        BrokerServiceProvider or Connector or CoreParticipant
+
+    SubClassOf:
+        FunctionalComplex
+
+Class: MargheritaPizza
+
+    SubClassOf:
+        NamedPizza,
+        hasTopping some TomatoTopping,
+        hasTopping some MozzarellaTopping,
+        hasTopping only (MozzarellaTopping or TomatoTopping or Cheese)
+
+    DisjointClasses:
+        AmericanaHotPizza, AmericanaPizza, SohoPizza
+
+    Individuals:
+        MargheritaPizza1,
+        MargheritaPizza2
+
+Class: MargheritaPizza
+
+    SubClassOf:
+        NamedPizza,
+        hasTopping only (MozzarellaTopping or TomatoTopping),
+        hasTopping some MozzarellaTopping,
+        hasTopping some TomatoTopping
+
+    DisjointClasses:
+        AmericanaHotPizza, AmericanaPizza, SohoPizza
+        Individuals:
+        MargheritaPizza1,
+        MargheritaPizza2
+
+Class: HighCaloriePizza
+
+    EquivalentTo:
+        Pizza
+        and (hasCaloricContent some xsd:integer[>= 400])
+
+Class: LowCaloriePizza
+
+    EquivalentTo:
+        Pizza
+        and (hasCaloricContent some xsd:integer[< 400])
+
+Class: InterestingPizza
+
+    EquivalentTo:
+        Pizza
+        and (hasTopping min 3 PizzaTopping)
+
+Class: Employee
+
+    SubClassOf:
+        Person
+        and (ssn min 1 xsd:string)
+
+Class: Customer
+
+    EquivalentTo:
+        Person
+        and (purchasedPizza some Pizza)
+        and (hasPhone some xsd:string)
+
+Class: EvaluationFacility
+
+    SubClassOf:
+        IntermediaryParticipant,
+        emitsReport some EvaluationReport,
+        mediates some EvaluationAct
