@@ -73,10 +73,11 @@
     #include <iostream>
     #include <stdio.h>
     #include <cstdlib>
-    #include <cstring>
     #include <map>
     #include <vector>
-    #include "PropRule.cpp"
+    #include "analisadorSem.cpp"
+    using std::vector;
+    using std::string;
     using std::cout;
     using std::endl;
 
@@ -92,23 +93,26 @@
     int definedClass = 0;
     int numErrors = 0;
 
-    char currentClass[100];
-    char currentOper[100];
+    string currentClass;
+    string currentOper;
+
+    vector<string> sintatico;
+    vector<string> sintaticErrors;
+    string sintClass = "";
 
     std::string currentProp;
 
     // pra sobrecarga de operadores
     PropRule** PropRule::propRules = new PropRule*[300];
-    int qntdRules = 0;
 
-    // pra precedencia de operadores
-    std::vector<std::string> precAux;
-    std::vector<std::string> onlyAppeareds;
+    // analisador semântico
+    analisadorSem * semantico = new analisadorSem();
 
     extern char *yytext;
+    extern int yylineno; 
 
 
-#line 112 "analisadorSint.tab.c"
+#line 116 "analisadorSint.tab.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -590,14 +594,14 @@ static const yytype_int8 yytranslate[] =
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_uint8 yyrline[] =
 {
-       0,    52,    52,    53,    54,    55,    56,    57,    60,    63,
-      66,    69,    72,    75,    76,    79,    80,    81,    82,    85,
-      86,    89,    90,    93,    96,    99,   102,   105,   106,   107,
-     108,   111,   112,   113,   116,   117,   118,   121,   122,   125,
-     126,   127,   128,   129,   130,   133,   134,   148,   149,   150,
-     151,   152,   155,   158,   159,   162,   163,   166,   169,   170,
-     173,   174,   175,   176,   180,   181,   184,   185,   186,   187,
-     190,   193,   194,   195,   198,   199,   202,   203
+       0,    56,    56,    57,    58,    59,    60,    61,    64,    67,
+      70,    73,    76,    79,    80,    83,    84,    85,    86,    89,
+      90,    93,    94,    97,   100,   103,   106,   109,   110,   111,
+     112,   115,   116,   117,   120,   121,   122,   125,   126,   129,
+     130,   131,   132,   133,   134,   137,   138,   139,   140,   141,
+     142,   143,   146,   149,   150,   153,   154,   157,   160,   161,
+     164,   165,   166,   167,   171,   172,   175,   176,   177,   178,
+     181,   184,   185,   186,   189,   190,   193,   194
 };
 #endif
 
@@ -1246,176 +1250,163 @@ yyreduce:
   switch (yyn)
     {
   case 2: /* classe: classeDefinida classe  */
-#line 52 "analisadorSint.y"
+#line 56 "analisadorSint.y"
                                 { definedClass++; numbClasses++; }
-#line 1252 "analisadorSint.tab.c"
+#line 1256 "analisadorSint.tab.c"
     break;
 
   case 3: /* classe: classePrimitiva classe  */
-#line 53 "analisadorSint.y"
+#line 57 "analisadorSint.y"
                                 { primitiveClass++; numbClasses++; }
-#line 1258 "analisadorSint.tab.c"
+#line 1262 "analisadorSint.tab.c"
     break;
 
   case 4: /* classe: classeComum classe  */
-#line 54 "analisadorSint.y"
+#line 58 "analisadorSint.y"
                                 { comumClass++; numbClasses++; }
-#line 1264 "analisadorSint.tab.c"
+#line 1268 "analisadorSint.tab.c"
     break;
 
   case 5: /* classe: classeDesconhecida classe  */
-#line 55 "analisadorSint.y"
+#line 59 "analisadorSint.y"
                                 { definedClass++; numbClasses++; }
-#line 1270 "analisadorSint.tab.c"
+#line 1274 "analisadorSint.tab.c"
     break;
 
   case 8: /* rclass: RCLASS CLASS  */
-#line 60 "analisadorSint.y"
-                     { strcpy(currentClass, yytext); precAux.clear(); onlyAppeareds.clear(); }
-#line 1276 "analisadorSint.tab.c"
+#line 64 "analisadorSint.y"
+                     { currentClass = yytext; semantico->precAux.clear(); semantico->onlyAppeareds.clear(); sintClass = ""; }
+#line 1280 "analisadorSint.tab.c"
     break;
 
   case 9: /* classeComum: rclass disjoint individuals  */
-#line 63 "analisadorSint.y"
-                                         { std::cout << "Classe Comum"; std::cout << " -> " << currentClass << std::endl; }
-#line 1282 "analisadorSint.tab.c"
+#line 67 "analisadorSint.y"
+                                         { sintClass += "Classe Comum -> " + currentClass + "\n"; sintatico.push_back(sintClass); }
+#line 1286 "analisadorSint.tab.c"
     break;
 
   case 10: /* classePrimitiva: rclass subclass disjoint individuals  */
-#line 66 "analisadorSint.y"
-                                                      { std::cout << "Classe Primitiva"; std::cout << " -> " << currentClass << std::endl; }
-#line 1288 "analisadorSint.tab.c"
+#line 70 "analisadorSint.y"
+                                                      { sintClass += "Classe Primitiva -> " + currentClass + "\n"; sintatico.push_back(sintClass); }
+#line 1292 "analisadorSint.tab.c"
     break;
 
   case 11: /* classeDefinida: rclass equivalent disjoint individuals  */
-#line 69 "analisadorSint.y"
-                                                       { std::cout << "Classe Definida"; std::cout << " -> " << currentClass << std::endl; }
-#line 1294 "analisadorSint.tab.c"
+#line 73 "analisadorSint.y"
+                                                       { sintClass += "Classe Definida -> " + currentClass + "\n"; sintatico.push_back(sintClass); }
+#line 1298 "analisadorSint.tab.c"
     break;
 
   case 12: /* classeDesconhecida: rclass equivalent subclass disjoint individuals  */
-#line 72 "analisadorSint.y"
-                                                                    { std::cout << "Classe Definida"; std::cout << " -> " << currentClass << std::endl; }
-#line 1300 "analisadorSint.tab.c"
+#line 76 "analisadorSint.y"
+                                                                    { sintClass += "Classe Definida -> " + currentClass + "\n"; sintatico.push_back(sintClass); }
+#line 1304 "analisadorSint.tab.c"
     break;
 
   case 14: /* equivalent: requivalent instancies  */
-#line 76 "analisadorSint.y"
-                              { std::cout << "Classe enumerada, "; }
-#line 1306 "analisadorSint.tab.c"
+#line 80 "analisadorSint.y"
+                              { sintClass += "Classe enumerada, "; }
+#line 1310 "analisadorSint.tab.c"
     break;
 
   case 23: /* requivalent: REQUIVALENT  */
-#line 93 "analisadorSint.y"
-                            { strcpy(currentOper, yytext); }
-#line 1312 "analisadorSint.tab.c"
+#line 97 "analisadorSint.y"
+                            { currentOper = yytext; }
+#line 1316 "analisadorSint.tab.c"
     break;
 
   case 24: /* rsubclass: RSUBCLASS  */
-#line 96 "analisadorSint.y"
-                            { strcpy(currentOper, yytext); }
-#line 1318 "analisadorSint.tab.c"
+#line 100 "analisadorSint.y"
+                            { currentOper = yytext; }
+#line 1322 "analisadorSint.tab.c"
     break;
 
   case 25: /* rindividuals: RINDIVIDUALS  */
-#line 99 "analisadorSint.y"
-                            { strcpy(currentOper, yytext); }
-#line 1324 "analisadorSint.tab.c"
+#line 103 "analisadorSint.y"
+                            { currentOper = yytext; }
+#line 1328 "analisadorSint.tab.c"
     break;
 
   case 26: /* rdisjoint: RDISJOINT  */
-#line 102 "analisadorSint.y"
-                            { strcpy(currentOper, yytext); }
-#line 1330 "analisadorSint.tab.c"
+#line 106 "analisadorSint.y"
+                            { currentOper = yytext; }
+#line 1334 "analisadorSint.tab.c"
     break;
 
   case 29: /* equivProbs: connect multClasses  */
-#line 107 "analisadorSint.y"
-                          { std::cout << "Classe coberta, "; }
-#line 1336 "analisadorSint.tab.c"
+#line 111 "analisadorSint.y"
+                          { sintClass += "Classe coberta, "; }
+#line 1340 "analisadorSint.tab.c"
     break;
 
   case 46: /* prop: propName only  */
-#line 134 "analisadorSint.y"
-                           { std::cout << "Axioma de fechamento, \n"; 
-                            int tam = precAux.size();
-                            for(int i = 0; i < tam; i++) {
-                                for(int j = 0; j < onlyAppeareds.size(); j++) { 
-                                    std::string aux = precAux[i];
-                                    if(!(aux.compare(onlyAppeareds[j]))) {
-                                        onlyAppeareds.erase(onlyAppeareds.begin() + j);
-                                    }
-                                }
-                            }
-                            for(std::string sobrou : onlyAppeareds){
-                                cout << "Precedência: " << sobrou << " não declarada antes de ser fechada. " << endl;
-                            }
-                            }
-#line 1355 "analisadorSint.tab.c"
+#line 138 "analisadorSint.y"
+                           { sintClass += "Axioma de fechamento, "; semantico->precedenceChecker(currentProp, yylineno); }
+#line 1346 "analisadorSint.tab.c"
     break;
 
   case 52: /* propName: PROPRIETY  */
-#line 155 "analisadorSint.y"
+#line 146 "analisadorSint.y"
                             { currentProp = yytext;}
-#line 1361 "analisadorSint.tab.c"
+#line 1352 "analisadorSint.tab.c"
     break;
 
   case 57: /* auxOnlyClass: CLASS  */
-#line 166 "analisadorSint.y"
-                                { onlyAppeareds.push_back(yytext); }
-#line 1367 "analisadorSint.tab.c"
+#line 157 "analisadorSint.y"
+                                { semantico->onlyAppeareds.push_back(yytext); }
+#line 1358 "analisadorSint.tab.c"
     break;
 
   case 60: /* some: SOME CLASS  */
-#line 173 "analisadorSint.y"
-                        { PropRule* propy = new PropRule(currentProp, OBJPROP); PropRule::propRules[qntdRules++] = propy; precAux.push_back(yytext); }
-#line 1373 "analisadorSint.tab.c"
+#line 164 "analisadorSint.y"
+                       { PropRule::propRules[semantico->qntdRules++] = new PropRule(currentProp, OBJPROP, yylineno);  semantico->precAux.push_back(yytext); }
+#line 1364 "analisadorSint.tab.c"
     break;
 
   case 62: /* some: SOME DTYPE especificardtype  */
-#line 175 "analisadorSint.y"
-                                  { PropRule* propy = new PropRule(currentProp, DATAPROP); PropRule::propRules[qntdRules++] = propy; }
-#line 1379 "analisadorSint.tab.c"
+#line 166 "analisadorSint.y"
+                                  { PropRule::propRules[semantico->qntdRules++] = new PropRule(currentProp, DATAPROP, yylineno); }
+#line 1370 "analisadorSint.tab.c"
     break;
 
   case 63: /* some: SOME prop  */
-#line 176 "analisadorSint.y"
-                            { std::cout << "Descrição aninhada, "; }
-#line 1385 "analisadorSint.tab.c"
+#line 167 "analisadorSint.y"
+                            { sintClass += "Descrição aninhada, "; }
+#line 1376 "analisadorSint.tab.c"
     break;
 
   case 66: /* qntd: MIN num DTYPE  */
-#line 184 "analisadorSint.y"
-                      { PropRule* propy = new PropRule(currentProp, DATAPROP); PropRule::propRules[qntdRules++] = propy; precAux.push_back(yytext); }
-#line 1391 "analisadorSint.tab.c"
+#line 175 "analisadorSint.y"
+                      { PropRule::propRules[semantico->qntdRules++] = new PropRule(currentProp, DATAPROP, yylineno); semantico->precAux.push_back(yytext); }
+#line 1382 "analisadorSint.tab.c"
     break;
 
   case 67: /* qntd: MAX num DTYPE  */
-#line 185 "analisadorSint.y"
-                      { PropRule* propy = new PropRule(currentProp, DATAPROP); PropRule::propRules[qntdRules++] = propy; precAux.push_back(yytext); }
-#line 1397 "analisadorSint.tab.c"
+#line 176 "analisadorSint.y"
+                      { PropRule::propRules[semantico->qntdRules++] = new PropRule(currentProp, DATAPROP, yylineno); semantico->precAux.push_back(yytext); }
+#line 1388 "analisadorSint.tab.c"
     break;
 
   case 68: /* qntd: MIN num CLASS  */
-#line 186 "analisadorSint.y"
-                      { PropRule* propy = new PropRule(currentProp, OBJPROP); PropRule::propRules[qntdRules++] = propy; precAux.push_back(yytext); }
-#line 1403 "analisadorSint.tab.c"
+#line 177 "analisadorSint.y"
+                      { PropRule::propRules[semantico->qntdRules++] = new PropRule(currentProp, OBJPROP, yylineno);  semantico->precAux.push_back(yytext); }
+#line 1394 "analisadorSint.tab.c"
     break;
 
   case 69: /* qntd: MAX num CLASS  */
-#line 187 "analisadorSint.y"
-                      { PropRule* propy = new PropRule(currentProp, OBJPROP); PropRule::propRules[qntdRules++] = propy; precAux.push_back(yytext); }
-#line 1409 "analisadorSint.tab.c"
+#line 178 "analisadorSint.y"
+                      { PropRule::propRules[semantico->qntdRules++] = new PropRule(currentProp, OBJPROP, yylineno);  semantico->precAux.push_back(yytext); }
+#line 1400 "analisadorSint.tab.c"
     break;
 
   case 70: /* num: CARDINALIDADE  */
-#line 190 "analisadorSint.y"
-                        { int num = atoi(yytext); cout << num << endl; }
-#line 1415 "analisadorSint.tab.c"
+#line 181 "analisadorSint.y"
+                        { int num = atoi(yytext); /*cout << num << endl;*/ }
+#line 1406 "analisadorSint.tab.c"
     break;
 
 
-#line 1419 "analisadorSint.tab.c"
+#line 1410 "analisadorSint.tab.c"
 
       default: break;
     }
@@ -1608,17 +1599,13 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 206 "analisadorSint.y"
+#line 197 "analisadorSint.y"
 
 
 /* definido pelo analisador léxico */
 extern FILE * yyin;  
 int main(int argc, char ** argv)
 {
-
-    cout << "-------------------------------------------------------------------------------" << std::endl;
-    cout << "\t\t\t\t ANÁLISE" << std::endl;
-    cout << "-------------------------------------------------------------------------------" << std::endl;
 
     /* se foi passado um nome de arquivo */
 	if (argc > 1)
@@ -1636,51 +1623,86 @@ int main(int argc, char ** argv)
 	}
 
 	yyparse();
+    semantico->overloadChecker();
 
-    cout << "-------------------------------------------------------------------------------" << std::endl;
-    cout << "\t\t\t\t RESULTADOS" << std::endl;
-    cout << "-------------------------------------------------------------------------------" << std::endl;
-    cout << "Classes comuns: \t" << comumClass << std::endl;
-    cout << "Classes primitivas: \t" << primitiveClass << std::endl;
-    cout << "Classes definidas: \t" << definedClass << std::endl;
-    cout << "Classes com erro: \t" << numErrors << std::endl;
-    cout << "Número de classes: \t" << numbClasses << std::endl;
-    cout << "-------------------------------------------------------------------------------" << std::endl;
+    cout << "Arquivo lido: " << argv[1] << endl;
 
-    cout << "-------------------------------------------------------------------------------" << std::endl;
-    cout << "\t\t\t\t REGRAS" << std::endl;
-    cout << "-------------------------------------------------------------------------------" << std::endl;
+    int opc = 0;
+    do {
+        cout << "----------------------------------" << std::endl;
+        cout << "\t\tAnálise" << endl;
+        cout << "----------------------------------" << std::endl;
+        cout << "[1] - Visualizar especificações das classes\n";
+        cout << "[2] - Visualizar contagens de classes\n";
+        cout << "[3] - Visualizar erros semânticos\n";
+        cout << "[4] - Visualizar erros sintáticos\n";
+        cout << "[5] - Encerrar a análise\n";
+        cout << "----------------------------------" << std::endl;
+        cout << "Opção: ";
+        std::cin >> opc;  
 
-    std::map<std::string, int> correctRules;
-
-    // 0 é Object Propriety e 1 é Data Propriety
-    for(int i = 0; i < qntdRules; i++){
-        std::string propriety = PropRule::propRules[i]->getName();
-        cout << propriety << " -> " << PropRule::propRules[i]->getType() << endl;
-        if(correctRules.find(propriety) == correctRules.end()) {
-            correctRules[PropRule::propRules[i]->getName()] = PropRule::propRules[i]->getType();
-        } else if(!(PropRule::propRules[i]->getType() == correctRules[propriety])) {
-            cout << "Erro semântico!!! " << propriety << " já foi definida como " << correctRules[propriety] << endl;
+        switch(opc){
+        case 1:
+            cout << "-------------------------------------------------------------------------------" << std::endl;
+            cout << "\t\t\t\t ANÁLISE" << std::endl;
+            cout << "-------------------------------------------------------------------------------" << std::endl;
+            for(string c : sintatico) {
+                cout << c;
+            }
+        break;
+        case 2:
+            cout << "-------------------------------------------------------------------------------" << std::endl;
+            cout << "\t\t\t\t CONTAGEM" << std::endl;
+            cout << "-------------------------------------------------------------------------------" << std::endl;
+            cout << "Classes comuns: \t" << comumClass << std::endl;
+            cout << "Classes primitivas: \t" << primitiveClass << std::endl;
+            cout << "Classes definidas: \t" << definedClass << std::endl;
+            cout << "Classes com erro: \t" << numErrors << std::endl;
+            cout << "Número de classes: \t" << numbClasses << std::endl;
+            cout << "-------------------------------------------------------------------------------" << std::endl;
+        break;
+        case 3:
+            cout << "-------------------------------------------------------------------------------" << std::endl;
+            cout << "\t\t\t\t ERROS SEMÂNTICOS" << std::endl;
+            cout << "-------------------------------------------------------------------------------" << std::endl;
+            for(string e : semantico->semanticErrors){
+                cout << "ERRO SEMÂNTICO: " << e;
+            }  
+            if(semantico->semanticErrors.size() == 0){
+                cout << "Nenhum erro semântico encontrado. Verifique os sintáticos.\n";
+            }
+        break;
+        case 4:
+            cout << "-------------------------------------------------------------------------------" << std::endl;
+            cout << "\t\t\t\t ERROS SINTÁTICOS" << std::endl;
+            cout << "-------------------------------------------------------------------------------" << std::endl;
+            for(string e: sintaticErrors){
+                cout << e;
+            }
+            if(sintaticErrors.size() == 0){
+                cout << "Nenhum erro sintático encontrado.\n";
+            }
+        break;
+        default:
+        break;
         }
-    }
+    } while(opc != 5);
 
-    cout << correctRules["hasTopping"] << endl;
-    
+    cout << "Análise Encerrada." << endl;
+
 }
 
 void yyerror(const char * s)
 {
-	/* variáveis definidas no analisador léxico */
-	extern int yylineno;    
+	/* variáveis definidas no analisador léxico */   
 	extern char * yytext;   
 
     numErrors++;
-    cout << "-------------------------------------------------------------------------------\n";
-    cout << "\t\t\t\t ERRO" << std::endl;
-	/* mensagem de erro exibe o símbolo que causou erro e o número da linha */
-    cout << "-------------------------------------------------------------------------------\n";
-    cout << "ERRO SINTÁTICO: símbolo \"" << yytext << "\" (linha " << yylineno << " do arquivo)\n";
-    cout << "NA PROPRIEDADE: \"" << currentOper << "\" DA CLASSE " << currentClass << std::endl;
-    //cout << "Erro na " << numbClasses++ << "ª classe.\n";
-    cout << "-------------------------------------------------------------------------------\n";
+    string aux = "";
+
+    aux += "ERRO SINTÁTICO: símbolo \"" + std::string(yytext) + "\" (linha " + std::to_string(yylineno) + " do arquivo)\n";
+    aux += "NA PROPRIEDADE: \"" + currentOper + "\" DA CLASSE " + currentClass + "\n";
+
+    sintaticErrors.push_back(aux);
+    aux = "";
 }
