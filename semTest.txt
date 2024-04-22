@@ -39,12 +39,13 @@ Class: MargheritaPizza
     SubClassOf:
         NamedPizza,
         hasTopping only (MozzarellaTopping or TomatoTopping),
-        hasTopping some MozzarellaTopping,
-        hasTopping some TomatoTopping
+        hasTopping some TomatoTopping,
+        hasTopping some xsd:string,
 
     DisjointClasses:
         AmericanaHotPizza, AmericanaPizza, SohoPizza
-        Individuals:
+
+    Individuals:
         MargheritaPizza1,
         MargheritaPizza2
 

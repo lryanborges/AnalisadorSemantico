@@ -3,10 +3,11 @@
     #include <iostream>
     #include <stdio.h>
     #include <cstdlib>
-    #include <cstring>
     #include <map>
     #include <vector>
-    #include "PropRule.cpp"
+    #include "analisadorSem.cpp"
+    using std::vector;
+    using std::string;
     using std::cout;
     using std::endl;
 
@@ -22,20 +23,23 @@
     int definedClass = 0;
     int numErrors = 0;
 
-    char currentClass[100];
-    char currentOper[100];
+    string currentClass;
+    string currentOper;
+
+    vector<string> sintatico;
+    vector<string> sintaticErrors;
+    string sintClass = "";
 
     std::string currentProp;
 
     // pra sobrecarga de operadores
     PropRule** PropRule::propRules = new PropRule*[300];
-    int qntdRules = 0;
 
-    // pra precedencia de operadores
-    std::vector<std::string> precAux;
-    std::vector<std::string> onlyAppeareds;
+    // analisador semântico
+    analisadorSem * semantico = new analisadorSem();
 
     extern char *yytext;
+    extern int yylineno; 
 
 %}
 
@@ -57,23 +61,23 @@ classe: classeDefinida classe   { definedClass++; numbClasses++; }
     | 
     ;
 
-rclass: RCLASS CLASS { strcpy(currentClass, yytext); precAux.clear(); onlyAppeareds.clear(); }
+rclass: RCLASS CLASS { currentClass = yytext; semantico->precAux.clear(); semantico->onlyAppeareds.clear(); sintClass = ""; }
     ;
 
-classeComum: rclass disjoint individuals { std::cout << "Classe Comum"; std::cout << " -> " << currentClass << std::endl; }
+classeComum: rclass disjoint individuals { sintClass += "Classe Comum -> " + currentClass + "\n"; sintatico.push_back(sintClass); }
     ;
 
-classePrimitiva: rclass subclass disjoint individuals { std::cout << "Classe Primitiva"; std::cout << " -> " << currentClass << std::endl; }
+classePrimitiva: rclass subclass disjoint individuals { sintClass += "Classe Primitiva -> " + currentClass + "\n"; sintatico.push_back(sintClass); }
     ;
 
-classeDefinida: rclass equivalent disjoint individuals { std::cout << "Classe Definida"; std::cout << " -> " << currentClass << std::endl; } 
+classeDefinida: rclass equivalent disjoint individuals { sintClass += "Classe Definida -> " + currentClass + "\n"; sintatico.push_back(sintClass); } 
     ;
 
-classeDesconhecida: rclass equivalent subclass disjoint individuals { std::cout << "Classe Definida"; std::cout << " -> " << currentClass << std::endl; }
+classeDesconhecida: rclass equivalent subclass disjoint individuals { sintClass += "Classe Definida -> " + currentClass + "\n"; sintatico.push_back(sintClass); }
     ;
 
 equivalent: requivalent CLASS equivProbs
-    | requivalent instancies  { std::cout << "Classe enumerada, "; }
+    | requivalent instancies  { sintClass += "Classe enumerada, "; }
     ;
 
 subclass: rsubclass CLASS
@@ -90,21 +94,21 @@ disjoint: rdisjoint seqClasses
     |
     ;    
 
-requivalent: REQUIVALENT    { strcpy(currentOper, yytext); }
+requivalent: REQUIVALENT    { currentOper = yytext; }
     ;
 
-rsubclass: RSUBCLASS        { strcpy(currentOper, yytext); }
+rsubclass: RSUBCLASS        { currentOper = yytext; }
     ;        
 
-rindividuals: RINDIVIDUALS  { strcpy(currentOper, yytext); }
+rindividuals: RINDIVIDUALS  { currentOper = yytext; }
     ;    
 
-rdisjoint: RDISJOINT        { strcpy(currentOper, yytext); }
+rdisjoint: RDISJOINT        { currentOper = yytext; }
     ;                            
 
 equivProbs: ',' seqProp
     | connect seqProp
-    | connect multClasses { std::cout << "Classe coberta, "; }
+    | connect multClasses { sintClass += "Classe coberta, "; }
     | '(' equivProbs ')'
     ;
 
@@ -131,20 +135,7 @@ seqProp: prop
     ;
 
 prop: propName some 
-    | propName only        { std::cout << "Axioma de fechamento, \n"; 
-                            int tam = precAux.size();
-                            for(int i = 0; i < tam; i++) {
-                                for(int j = 0; j < onlyAppeareds.size(); j++) { 
-                                    std::string aux = precAux[i];
-                                    if(!(aux.compare(onlyAppeareds[j]))) {
-                                        onlyAppeareds.erase(onlyAppeareds.begin() + j);
-                                    }
-                                }
-                            }
-                            for(std::string sobrou : onlyAppeareds){
-                                cout << "Precedência: " << sobrou << " não declarada antes de ser fechada. " << endl;
-                            }
-                            }
+    | propName only        { sintClass += "Axioma de fechamento, "; semantico->precedenceChecker(currentProp, yylineno); }
     | propName value
     | propName qntd
     | propName exactly
@@ -163,17 +154,17 @@ onlyMultClasses: auxOnlyClass
     | auxOnlyClass connect onlyMultClasses 
     ;
 
-auxOnlyClass: CLASS             { onlyAppeareds.push_back(yytext); }
+auxOnlyClass: CLASS             { semantico->onlyAppeareds.push_back(yytext); }
     ;
 
 multClasses: CLASS
     | CLASS connect multClasses 
     ;
 
-some: SOME CLASS        { PropRule* propy = new PropRule(currentProp, OBJPROP); PropRule::propRules[qntdRules++] = propy; precAux.push_back(yytext); }
+some: SOME CLASS       { PropRule::propRules[semantico->qntdRules++] = new PropRule(currentProp, OBJPROP, yylineno);  semantico->precAux.push_back(yytext); }
     | SOME '(' multClasses ')'
-    | SOME DTYPE especificardtype { PropRule* propy = new PropRule(currentProp, DATAPROP); PropRule::propRules[qntdRules++] = propy; }
-    | SOME prop             { std::cout << "Descrição aninhada, "; }
+    | SOME DTYPE especificardtype { PropRule::propRules[semantico->qntdRules++] = new PropRule(currentProp, DATAPROP, yylineno); }
+    | SOME prop             { sintClass += "Descrição aninhada, "; }
     //| error                 { std::cout << "Esperava CLASS, DTYPE, PROPRIETY\n"; }
     ;
 
@@ -181,13 +172,13 @@ especificardtype: '[' SSYMBOL num ']'
     |
     ;
 
-qntd: MIN num DTYPE   { PropRule* propy = new PropRule(currentProp, DATAPROP); PropRule::propRules[qntdRules++] = propy; precAux.push_back(yytext); }
-    | MAX num DTYPE   { PropRule* propy = new PropRule(currentProp, DATAPROP); PropRule::propRules[qntdRules++] = propy; precAux.push_back(yytext); }
-    | MIN num CLASS   { PropRule* propy = new PropRule(currentProp, OBJPROP); PropRule::propRules[qntdRules++] = propy; precAux.push_back(yytext); }
-    | MAX num CLASS   { PropRule* propy = new PropRule(currentProp, OBJPROP); PropRule::propRules[qntdRules++] = propy; precAux.push_back(yytext); }
+qntd: MIN num DTYPE   { PropRule::propRules[semantico->qntdRules++] = new PropRule(currentProp, DATAPROP, yylineno); semantico->precAux.push_back(yytext); }
+    | MAX num DTYPE   { PropRule::propRules[semantico->qntdRules++] = new PropRule(currentProp, DATAPROP, yylineno); semantico->precAux.push_back(yytext); }
+    | MIN num CLASS   { PropRule::propRules[semantico->qntdRules++] = new PropRule(currentProp, OBJPROP, yylineno);  semantico->precAux.push_back(yytext); }
+    | MAX num CLASS   { PropRule::propRules[semantico->qntdRules++] = new PropRule(currentProp, OBJPROP, yylineno);  semantico->precAux.push_back(yytext); }
     ;
 
-num: CARDINALIDADE      { int num = atoi(yytext); cout << num << endl; }
+num: CARDINALIDADE      { int num = atoi(yytext); /*cout << num << endl;*/ }
     ;
 
 value: VALUE CLASS
@@ -210,10 +201,6 @@ extern FILE * yyin;
 int main(int argc, char ** argv)
 {
 
-    cout << "-------------------------------------------------------------------------------" << std::endl;
-    cout << "\t\t\t\t ANÁLISE" << std::endl;
-    cout << "-------------------------------------------------------------------------------" << std::endl;
-
     /* se foi passado um nome de arquivo */
 	if (argc > 1)
 	{
@@ -230,51 +217,86 @@ int main(int argc, char ** argv)
 	}
 
 	yyparse();
+    semantico->overloadChecker();
 
-    cout << "-------------------------------------------------------------------------------" << std::endl;
-    cout << "\t\t\t\t RESULTADOS" << std::endl;
-    cout << "-------------------------------------------------------------------------------" << std::endl;
-    cout << "Classes comuns: \t" << comumClass << std::endl;
-    cout << "Classes primitivas: \t" << primitiveClass << std::endl;
-    cout << "Classes definidas: \t" << definedClass << std::endl;
-    cout << "Classes com erro: \t" << numErrors << std::endl;
-    cout << "Número de classes: \t" << numbClasses << std::endl;
-    cout << "-------------------------------------------------------------------------------" << std::endl;
+    cout << "Arquivo lido: " << argv[1] << endl;
 
-    cout << "-------------------------------------------------------------------------------" << std::endl;
-    cout << "\t\t\t\t REGRAS" << std::endl;
-    cout << "-------------------------------------------------------------------------------" << std::endl;
+    int opc = 0;
+    do {
+        cout << "----------------------------------" << std::endl;
+        cout << "\t\tAnálise" << endl;
+        cout << "----------------------------------" << std::endl;
+        cout << "[1] - Visualizar especificações das classes\n";
+        cout << "[2] - Visualizar contagens de classes\n";
+        cout << "[3] - Visualizar erros semânticos\n";
+        cout << "[4] - Visualizar erros sintáticos\n";
+        cout << "[5] - Encerrar a análise\n";
+        cout << "----------------------------------" << std::endl;
+        cout << "Opção: ";
+        std::cin >> opc;  
 
-    std::map<std::string, int> correctRules;
-
-    // 0 é Object Propriety e 1 é Data Propriety
-    for(int i = 0; i < qntdRules; i++){
-        std::string propriety = PropRule::propRules[i]->getName();
-        cout << propriety << " -> " << PropRule::propRules[i]->getType() << endl;
-        if(correctRules.find(propriety) == correctRules.end()) {
-            correctRules[PropRule::propRules[i]->getName()] = PropRule::propRules[i]->getType();
-        } else if(!(PropRule::propRules[i]->getType() == correctRules[propriety])) {
-            cout << "Erro semântico!!! " << propriety << " já foi definida como " << correctRules[propriety] << endl;
+        switch(opc){
+        case 1:
+            cout << "-------------------------------------------------------------------------------" << std::endl;
+            cout << "\t\t\t\t ANÁLISE" << std::endl;
+            cout << "-------------------------------------------------------------------------------" << std::endl;
+            for(string c : sintatico) {
+                cout << c;
+            }
+        break;
+        case 2:
+            cout << "-------------------------------------------------------------------------------" << std::endl;
+            cout << "\t\t\t\t CONTAGEM" << std::endl;
+            cout << "-------------------------------------------------------------------------------" << std::endl;
+            cout << "Classes comuns: \t" << comumClass << std::endl;
+            cout << "Classes primitivas: \t" << primitiveClass << std::endl;
+            cout << "Classes definidas: \t" << definedClass << std::endl;
+            cout << "Classes com erro: \t" << numErrors << std::endl;
+            cout << "Número de classes: \t" << numbClasses << std::endl;
+            cout << "-------------------------------------------------------------------------------" << std::endl;
+        break;
+        case 3:
+            cout << "-------------------------------------------------------------------------------" << std::endl;
+            cout << "\t\t\t\t ERROS SEMÂNTICOS" << std::endl;
+            cout << "-------------------------------------------------------------------------------" << std::endl;
+            for(string e : semantico->semanticErrors){
+                cout << "ERRO SEMÂNTICO: " << e;
+            }  
+            if(semantico->semanticErrors.size() == 0){
+                cout << "Nenhum erro semântico encontrado. Verifique os sintáticos.\n";
+            }
+        break;
+        case 4:
+            cout << "-------------------------------------------------------------------------------" << std::endl;
+            cout << "\t\t\t\t ERROS SINTÁTICOS" << std::endl;
+            cout << "-------------------------------------------------------------------------------" << std::endl;
+            for(string e: sintaticErrors){
+                cout << e;
+            }
+            if(sintaticErrors.size() == 0){
+                cout << "Nenhum erro sintático encontrado.\n";
+            }
+        break;
+        default:
+        break;
         }
-    }
+    } while(opc != 5);
 
-    cout << correctRules["hasTopping"] << endl;
-    
+    cout << "Análise Encerrada." << endl;
+
 }
 
 void yyerror(const char * s)
 {
-	/* variáveis definidas no analisador léxico */
-	extern int yylineno;    
+	/* variáveis definidas no analisador léxico */   
 	extern char * yytext;   
 
     numErrors++;
-    cout << "-------------------------------------------------------------------------------\n";
-    cout << "\t\t\t\t ERRO" << std::endl;
-	/* mensagem de erro exibe o símbolo que causou erro e o número da linha */
-    cout << "-------------------------------------------------------------------------------\n";
-    cout << "ERRO SINTÁTICO: símbolo \"" << yytext << "\" (linha " << yylineno << " do arquivo)\n";
-    cout << "NA PROPRIEDADE: \"" << currentOper << "\" DA CLASSE " << currentClass << std::endl;
-    //cout << "Erro na " << numbClasses++ << "ª classe.\n";
-    cout << "-------------------------------------------------------------------------------\n";
+    string aux = "";
+
+    aux += "ERRO SINTÁTICO: símbolo \"" + std::string(yytext) + "\" (linha " + std::to_string(yylineno) + " do arquivo)\n";
+    aux += "NA PROPRIEDADE: \"" + currentOper + "\" DA CLASSE " + currentClass + "\n";
+
+    sintaticErrors.push_back(aux);
+    aux = "";
 }

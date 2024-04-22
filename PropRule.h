@@ -1,4 +1,5 @@
 #include <string>
+using std::string;
 
 enum types{
     OBJPROP,
@@ -8,16 +9,19 @@ enum types{
 class PropRule {
 
 private:
-    std::string name;
+    string name;
     types type;
+    string category;
+    int line;
 
 public:
     static PropRule** propRules;
 
-    PropRule(std::string n, types t);
-    ~PropRule();
+    PropRule(std::string n, types t, int l);
+    
     void setType(types t);
-    std::string getName();
+    string getName();
     types getType();
-
+    string getCategory();
+    string getLine();
 };
