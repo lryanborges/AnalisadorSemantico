@@ -1,0 +1,116 @@
+Class: Pizza
+
+    SubClassOf:
+        hasBase some PizzaBase,
+        hasCaloricContent some xsd:integer
+
+    DisjointClasses:
+        PizzaBase, PizzaTopping
+
+    Individuals:
+        CustomPizza1,
+        CustomPizza2
+
+Class: CheesyPizza
+
+    SubClassOf:
+        NamedPizza,
+        hasTopping some CheeseTopping,
+        hasTopping only CheeseTopping
+
+    EquivalentTo: 
+        Pizza
+         and (hasTopping some CheeseTopping)
+    
+
+Class: Evaluated
+
+    EquivalentTo:
+        BrokerServiceProvider or Connector or CoreParticipant
+
+    SubClassOf:
+        FunctionalComplex
+
+Class: MargheritaPizza
+
+    SubClassOf:
+        NamedPizza,
+        hasTopping some TomatoTopping,
+        hasTopping some MozzarellaTopping,
+        hasTopping only (MozzarellaTopping or TomatoTopping or CheeseTopping)
+
+    DisjointClasses:
+        AmericanaHotPizza, AmericanaPizza, SohoPizza
+
+    Individuals:
+        MargheritaPizza1,
+        MargheritaPizza2
+
+Class: SohoPizza
+   
+    SubClassOf: 
+        NamedPizza,
+        hasTopping only (OliveTopping or ParmesanTopping),
+        hasTopping some OliveTopping,
+        hasTopping some ParmesanTopping
+    
+    DisjointClasses:
+        AmericanaHotPizza, AmericanaPizza, MargheritaPizza, SohoPizza
+    
+    Individuals:
+        SohoPizza1,
+        SohoPizza2
+
+Class: HighCaloriePizza
+
+    EquivalentTo:
+        Pizza
+        and (hasCaloricContent some xsd:integer[>= 400])
+
+Class: LowCaloriePizza
+
+    EquivalentTo:
+        Pizza
+        and (hasCaloricContent some xsd:integer[< 400.7])
+
+Class: InterestingPizza
+
+    EquivalentTo:
+        Pizza
+        and (hasTopping min -3 PizzaTopping)
+
+Class: Employee
+
+    SubClassOf:
+        Person
+        and (ssn min 0 xsd:integer)
+
+Class: Customer
+
+    EquivalentTo:
+        Person
+        and (purchasedPizza some Pizza)
+        and (hasPhone some xsd:string)
+
+Class: EvaluationFacility
+
+    SubClassOf:
+        IntermediaryParticipant,
+        emitsReport some EvaluationReport,
+        mediates some EvaluationAct
+
+Class: VegetarianPizza
+
+    SubClassOf:
+        NamedPizza,
+        hasTopping some xsd:integer,
+        hasTopping some OnionTopping,
+        hasTopping some MozzarellaTopping,
+        hasTopping only (OnionTopping or MozzarellaTopping)
+
+    DisjointClasses:
+        AmericanaHotPizza, AmericanaPizza, SohoPizza
+
+    Individuals:
+        MargheritaPizza1,
+        MargheritaPizza2
