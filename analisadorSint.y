@@ -25,6 +25,7 @@
 
     string currentClass;
     string currentOper;
+    string precedenceAux;
 
     vector<string> sintatico;
     vector<string> sintaticErrors;
@@ -157,12 +158,15 @@ onlyMultClasses: auxOnlyClass
 auxOnlyClass: CLASS             { semantico->onlyAppeareds.push_back(yytext); }
     ;
 
-multClasses: CLASS
-    | CLASS connect multClasses 
+multClasses: className  
+    | className connect multClasses 
+    ;
+
+className: CLASS            { precedenceAux = yytext; }
     ;
 
 some: SOME CLASS       { PropRule::propRules[semantico->qntdRules++] = new PropRule(currentProp, OBJPROP, yylineno);  semantico->precAux.push_back(yytext); }
-    | SOME '(' multClasses ')'
+    | SOME '(' multClasses ')' { PropRule::propRules[semantico->qntdRules++] = new PropRule(currentProp, OBJPROP, yylineno);  semantico->precAux.push_back(precedenceAux); precedenceAux = ""; }
     | SOME DTYPE especificardtype { PropRule::propRules[semantico->qntdRules++] = new PropRule(currentProp, DATAPROP, yylineno); }
     | SOME prop             { sintClass += "Descrição aninhada, "; }
     //| error                 { std::cout << "Esperava CLASS, DTYPE, PROPRIETY\n"; }
