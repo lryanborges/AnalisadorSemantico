@@ -2,7 +2,6 @@
     
     #include <iostream>
     #include <stdio.h>
-    #include <cstdlib>
     #include <map>
     #include <vector>
     #include "analisadorSem.cpp"
@@ -23,9 +22,12 @@
     int definedClass = 0;
     int numErrors = 0;
 
+    bool isSubclassOf = false;
     string currentClass;
     string currentOper;
     string precedenceAux;
+    string coercionAux;
+    string currentNum = "";
 
     vector<string> sintatico;
     vector<string> sintaticErrors;
@@ -95,10 +97,10 @@ disjoint: rdisjoint seqClasses
     |
     ;    
 
-requivalent: REQUIVALENT    { currentOper = yytext; }
+requivalent: REQUIVALENT    { currentOper = yytext; isSubclassOf = false; }
     ;
 
-rsubclass: RSUBCLASS        { currentOper = yytext; }
+rsubclass: RSUBCLASS        { currentOper = yytext; isSubclassOf = true; }
     ;        
 
 rindividuals: RINDIVIDUALS  { currentOper = yytext; }
@@ -147,7 +149,7 @@ prop: propName some
 propName: PROPRIETY         { currentProp = yytext;}
     ;
 
-only: ONLY CLASS                    
+only: ONLY auxOnlyClass                    
     | ONLY '(' onlyMultClasses ')'
     ;
 
@@ -155,42 +157,45 @@ onlyMultClasses: auxOnlyClass
     | auxOnlyClass connect onlyMultClasses 
     ;
 
-auxOnlyClass: CLASS             { semantico->onlyAppeareds.push_back(yytext); }
+auxOnlyClass: CLASS             { if(isSubclassOf) semantico->onlyAppeareds.push_back(yytext); }
     ;
 
 multClasses: className  
     | className connect multClasses 
     ;
 
-className: CLASS            { precedenceAux = yytext; }
+className: CLASS            { precedenceAux = yytext; coercionAux = yytext; }
     ;
 
 some: SOME CLASS       { PropRule::propRules[semantico->qntdRules++] = new PropRule(currentProp, OBJPROP, yylineno);  semantico->precAux.push_back(yytext); }
     | SOME '(' multClasses ')' { PropRule::propRules[semantico->qntdRules++] = new PropRule(currentProp, OBJPROP, yylineno);  semantico->precAux.push_back(precedenceAux); precedenceAux = ""; }
-    | SOME DTYPE especificardtype { PropRule::propRules[semantico->qntdRules++] = new PropRule(currentProp, DATAPROP, yylineno); }
+    | SOME dtype especificardtype { PropRule::propRules[semantico->qntdRules++] = new PropRule(currentProp, DATAPROP, yylineno); }
     | SOME prop             { sintClass += "Descrição aninhada, "; }
     //| error                 { std::cout << "Esperava CLASS, DTYPE, PROPRIETY\n"; }
     ;
 
-especificardtype: '[' SSYMBOL num ']'
+especificardtype: '[' SSYMBOL num ']'   { semantico->coercionChecker(coercionAux, currentNum, yylineno); }
     |
     ;
 
-qntd: MIN num DTYPE   { PropRule::propRules[semantico->qntdRules++] = new PropRule(currentProp, DATAPROP, yylineno); semantico->precAux.push_back(yytext); }
-    | MAX num DTYPE   { PropRule::propRules[semantico->qntdRules++] = new PropRule(currentProp, DATAPROP, yylineno); semantico->precAux.push_back(yytext); }
-    | MIN num CLASS   { PropRule::propRules[semantico->qntdRules++] = new PropRule(currentProp, OBJPROP, yylineno);  semantico->precAux.push_back(yytext); }
-    | MAX num CLASS   { PropRule::propRules[semantico->qntdRules++] = new PropRule(currentProp, OBJPROP, yylineno);  semantico->precAux.push_back(yytext); }
+qntd: MIN num dtype   { PropRule::propRules[semantico->qntdRules++] = new PropRule(currentProp, DATAPROP, yylineno); semantico->precAux.push_back(yytext); semantico->coercionChecker(coercionAux, currentNum, yylineno); }
+    | MAX num dtype   { PropRule::propRules[semantico->qntdRules++] = new PropRule(currentProp, DATAPROP, yylineno); semantico->precAux.push_back(yytext); semantico->coercionChecker(coercionAux, currentNum, yylineno); }
+    | MIN num className   { PropRule::propRules[semantico->qntdRules++] = new PropRule(currentProp, OBJPROP, yylineno);  semantico->precAux.push_back(yytext); semantico->coercionChecker(coercionAux, currentNum, yylineno); }
+    | MAX num className   { PropRule::propRules[semantico->qntdRules++] = new PropRule(currentProp, OBJPROP, yylineno);  semantico->precAux.push_back(yytext); semantico->coercionChecker(coercionAux, currentNum, yylineno); }
     ;
 
-num: CARDINALIDADE      { int num = atoi(yytext); /*cout << num << endl;*/ }
+num: CARDINALIDADE      { currentNum = yytext; }
     ;
 
-value: VALUE CLASS
-    | VALUE INSTANCY
-    | VALUE DTYPE especificardtype
+dtype: DTYPE            { coercionAux = yytext; }
     ;
 
-exactly: EXACTLY CARDINALIDADE CLASS
+value: VALUE CLASS      { PropRule::propRules[semantico->qntdRules++] = new PropRule(currentProp, OBJPROP, yylineno);  semantico->precAux.push_back(yytext); }
+    | VALUE INSTANCY    { PropRule::propRules[semantico->qntdRules++] = new PropRule(currentProp, OBJPROP, yylineno);  semantico->precAux.push_back(yytext); }
+    | VALUE dtype especificardtype
+    ;
+
+exactly: EXACTLY num className      { semantico->coercionChecker(coercionAux, currentNum, yylineno); }
     | EXACTLY '{' instancies '}'
     ;
 
@@ -256,7 +261,7 @@ int main(int argc, char ** argv)
             cout << "Classes primitivas: \t" << primitiveClass << std::endl;
             cout << "Classes definidas: \t" << definedClass << std::endl;
             cout << "Classes com erro: \t" << numErrors << std::endl;
-            cout << "Número de classes: \t" << numbClasses << std::endl;
+            cout << "Número de classes compiladas: \t" << numbClasses << std::endl;
             cout << "-------------------------------------------------------------------------------" << std::endl;
         break;
         case 3:

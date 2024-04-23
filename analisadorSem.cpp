@@ -23,9 +23,41 @@ void analisadorSem::precedenceChecker(string currentOper, int currentLine)
     }
     for (std::string sobrou : onlyAppeareds)
     {
-        string error = "(Linha " + std::to_string(currentLine) + ") " + sobrou + " não foi declarada antes de ser fechada.\n";
+        string error = "(Linha " + std::to_string(currentLine) + ") \"" + sobrou + "\" não foi declarada antes de ser fechada.\n";
         semanticErrors.push_back(error);
     }
+}
+
+void analisadorSem::coercionChecker(string currentDtype, string num, int currentLine){
+
+    vector<std::string> dtype;
+    size_t start = 0, end = 0;
+    while ((end = currentDtype.find(':', start)) != string::npos) {
+        dtype.push_back(currentDtype.substr(start, end - start));
+        start = end + 1;
+    }
+    dtype.push_back(currentDtype.substr(start));
+
+    if(atoi(num.c_str()) <= 0){
+        //string error = "(Linha " + std::to_string(currentLine) + ") \"" + std::to_string(num) + "\" não pode ser atribuído ao tipo \"" + dtype.back() + "\".\n";
+        string error = "(Linha " + std::to_string(currentLine) + ") Não pode ser atribuído \"" + num + "\" ao quantificador de \"" + dtype.back() + "\".\n";
+        semanticErrors.push_back(error);
+    }
+
+    if(dtype.back() == "string" || dtype.back() == " string") {
+
+    } else if(dtype.back() == "integer" || dtype.back() == " integer") {
+        if(num.find('.') != string::npos){ // verifica se é float
+            string error = "(Linha " + std::to_string(currentLine) + ") \"" + num + "\" não pode ser atribuído ao tipo \"" + dtype.back() + "\".\n";   
+            semanticErrors.push_back(error);
+        }
+    } else if(dtype.back() == "float" || dtype.back() == " float" || dtype.back() == "double" || dtype.back() == " double"){
+        if(num.find('.') == string::npos){ // verifica se é inteiro
+            string error = "(Linha " + std::to_string(currentLine) + ") \"" + num + "\" não pode ser atribuído ao tipo \"" + dtype.back() + "\".\n";
+            semanticErrors.push_back(error);
+        }
+    }
+
 }
 
 void analisadorSem::overloadChecker()
@@ -39,7 +71,7 @@ void analisadorSem::overloadChecker()
         if(correctRules.find(propriety) == correctRules.end()) {
             correctRules[PropRule::propRules[i]->getName()] = PropRule::propRules[i]->getCategory();
         } else if(!(PropRule::propRules[i]->getCategory() == correctRules[propriety])) {
-            string error = "(Linha " + PropRule::propRules[i]->getLine() + ") " + propriety + " foi usada como " + PropRule::propRules[i]->getCategory() + " mas já estava definida como " + correctRules[propriety] + "\n";
+            string error = "(Linha " + PropRule::propRules[i]->getLine() + ") \"" + propriety + "\" foi usada como \"" + PropRule::propRules[i]->getCategory() + "\" mas já estava definida como \"" + correctRules[propriety] + "\"\n";
             semanticErrors.push_back(error);
         }
     }
