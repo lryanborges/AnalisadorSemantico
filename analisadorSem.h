@@ -14,6 +14,7 @@ class analisadorSem {
 
   public:
     int qntdRules = 0;
+    int qntdErrors = 0;
     vector<string> precAux;
     vector<string> onlyAppeareds;
     vector<string> semanticErrors;
@@ -23,6 +24,7 @@ class analisadorSem {
     ~analisadorSem();
 
     void precedenceChecker(string currentOper, int currentLine);
+    void operPrecedenceChecker(string currentOper, int currentLine);
     void coercionChecker(string currentDtype, string num, int currentLine);
     void overloadChecker();
 };

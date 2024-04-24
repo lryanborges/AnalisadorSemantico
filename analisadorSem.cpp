@@ -25,7 +25,14 @@ void analisadorSem::precedenceChecker(string currentOper, int currentLine)
     {
         string error = "(Linha " + std::to_string(currentLine) + ") \"" + sobrou + "\" não foi declarada antes de ser fechada.\n";
         semanticErrors.push_back(error);
+        qntdErrors++;
     }
+}
+
+void analisadorSem::operPrecedenceChecker(string currentOper, int currentLine) {
+    string error = "(Linha " + std::to_string(currentLine - 3) + ") \"" + currentOper + "\" não foi declarada no lugar correto.\n";
+    semanticErrors.push_back(error);
+    qntdErrors++;
 }
 
 void analisadorSem::coercionChecker(string currentDtype, string num, int currentLine){
@@ -42,6 +49,7 @@ void analisadorSem::coercionChecker(string currentDtype, string num, int current
         //string error = "(Linha " + std::to_string(currentLine) + ") \"" + std::to_string(num) + "\" não pode ser atribuído ao tipo \"" + dtype.back() + "\".\n";
         string error = "(Linha " + std::to_string(currentLine) + ") Não pode ser atribuído \"" + num + "\" ao quantificador de \"" + dtype.back() + "\".\n";
         semanticErrors.push_back(error);
+        qntdErrors++;
     }
 
     if(dtype.back() == "string" || dtype.back() == " string") {
@@ -50,11 +58,13 @@ void analisadorSem::coercionChecker(string currentDtype, string num, int current
         if(num.find('.') != string::npos){ // verifica se é float
             string error = "(Linha " + std::to_string(currentLine) + ") \"" + num + "\" não pode ser atribuído ao tipo \"" + dtype.back() + "\".\n";   
             semanticErrors.push_back(error);
+            qntdErrors++;
         }
     } else if(dtype.back() == "float" || dtype.back() == " float" || dtype.back() == "double" || dtype.back() == " double"){
         if(num.find('.') == string::npos){ // verifica se é inteiro
             string error = "(Linha " + std::to_string(currentLine) + ") \"" + num + "\" não pode ser atribuído ao tipo \"" + dtype.back() + "\".\n";
             semanticErrors.push_back(error);
+            qntdErrors++;
         }
     }
 
@@ -73,6 +83,7 @@ void analisadorSem::overloadChecker()
         } else if(!(PropRule::propRules[i]->getCategory() == correctRules[propriety])) {
             string error = "(Linha " + PropRule::propRules[i]->getLine() + ") \"" + propriety + "\" foi usada como \"" + PropRule::propRules[i]->getCategory() + "\" mas já estava definida como \"" + correctRules[propriety] + "\"\n";
             semanticErrors.push_back(error);
+            qntdErrors++;
         }
     }
 }

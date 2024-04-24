@@ -21,8 +21,20 @@ Class: CheesyPizza
     EquivalentTo: 
         Pizza
          and (hasTopping some CheeseTopping)
-    
 
+Class: SpicyPizza
+
+    EquivalentTo:
+        Pizza
+         and (hasTopping some (hasSpiciness value Hot))
+        
+    Individuals:
+        SpicyPizza1,
+        SpicyPizza2
+    
+    DisjointClasses:
+        AmericanaHotPizza, SohoPizza
+    
 Class: Evaluated
 
     EquivalentTo:
@@ -104,6 +116,7 @@ Class: VegetarianPizza
     SubClassOf:
         NamedPizza,
         hasTopping some xsd:integer,
+        hasCaloricContent some CheeseTopping,
         hasTopping some OnionTopping,
         hasTopping some MozzarellaTopping,
         hasTopping only (OnionTopping or MozzarellaTopping)

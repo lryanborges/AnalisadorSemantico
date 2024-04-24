@@ -20,6 +20,7 @@
     int comumClass = 0;
     int primitiveClass = 0;
     int definedClass = 0;
+    int unknownClass = 0;
     int numErrors = 0;
 
     bool isSubclassOf = false;
@@ -59,7 +60,7 @@
 classe: classeDefinida classe   { definedClass++; numbClasses++; }
     | classePrimitiva classe    { primitiveClass++; numbClasses++; }
     | classeComum classe        { comumClass++; numbClasses++; }
-    | classeDesconhecida classe { definedClass++; numbClasses++; }
+    | operPrecedenceAux classe  { unknownClass++; numbClasses++; }
     | error classe              
     | 
     ;
@@ -67,16 +68,56 @@ classe: classeDefinida classe   { definedClass++; numbClasses++; }
 rclass: RCLASS CLASS { currentClass = yytext; semantico->precAux.clear(); semantico->onlyAppeareds.clear(); sintClass = ""; }
     ;
 
-classeComum: rclass disjoint individuals { sintClass += "Classe Comum -> " + currentClass + "\n"; sintatico.push_back(sintClass); }
+classeComum: classeComumProbs   { sintClass += "Classe Comum -> " + currentClass + "\n"; sintatico.push_back(sintClass); }
     ;
 
-classePrimitiva: rclass subclass disjoint individuals { sintClass += "Classe Primitiva -> " + currentClass + "\n"; sintatico.push_back(sintClass); }
+classeComumProbs: rclass disjoint individuals 
+    | rclass disjoint
+    | rclass individuals
+    | rclass
     ;
 
-classeDefinida: rclass equivalent disjoint individuals { sintClass += "Classe Definida -> " + currentClass + "\n"; sintatico.push_back(sintClass); } 
+classePrimitiva: classePrimitivaProbs   { sintClass += "Classe Primitiva -> " + currentClass + "\n"; sintatico.push_back(sintClass); }
     ;
 
-classeDesconhecida: rclass equivalent subclass disjoint individuals { sintClass += "Classe Definida -> " + currentClass + "\n"; sintatico.push_back(sintClass); }
+classePrimitivaProbs: rclass subclass disjoint individuals 
+    | rclass subclass disjoint
+    | rclass subclass individuals
+    | rclass subclass
+    ;
+
+classeDefinida: classeDefinidaProbs { sintClass += "Classe Definida -> " + currentClass + "\n"; sintatico.push_back(sintClass); } 
+    ;
+
+classeDefinidaProbs: rclass equivalent disjoint individuals 
+    | rclass equivalent disjoint
+    | rclass equivalent individuals
+    | rclass equivalent
+    | rclass equivalent subclass disjoint individuals
+    | rclass equivalent subclass disjoint
+    | rclass equivalent subclass individuals
+    | rclass equivalent subclass
+    ;
+
+operPrecedenceAux: operPrecedenceAuxProbs   { sintClass += "Classe Desconhecida -> " + currentClass + "\n"; sintatico.push_back(sintClass); semantico->operPrecedenceChecker(currentOper, yylineno); }
+    ;
+
+// várias possibilidades de erro semantico p se aceitar no sintatico
+operPrecedenceAuxProbs: rclass subclass equivalent
+    | rclass subclass equivalent disjoint individuals
+    | rclass subclass equivalent individuals disjoint
+    | rclass subclass equivalent individuals
+    | rclass subclass equivalent disjoint
+    | rclass subclass individuals disjoint
+    | rclass equivalent individuals disjoint
+    | rclass individuals equivalent subclass disjoint
+    | rclass disjoint equivalent subclass individuals
+    | rclass individuals equivalent subclass
+    | rclass disjoint equivalent subclass
+    | rclass individuals subclass
+    | rclass individuals equivalent
+    | rclass disjoint subclass
+    | rclass disjoint equivalent
     ;
 
 equivalent: requivalent CLASS equivProbs
@@ -90,11 +131,9 @@ subclass: rsubclass CLASS
     ;         
 
 individuals: rindividuals instancies
-    |
     ;
 
 disjoint: rdisjoint seqClasses
-    |
     ;    
 
 requivalent: REQUIVALENT    { currentOper = yytext; isSubclassOf = false; }
@@ -260,8 +299,9 @@ int main(int argc, char ** argv)
             cout << "Classes comuns: \t" << comumClass << std::endl;
             cout << "Classes primitivas: \t" << primitiveClass << std::endl;
             cout << "Classes definidas: \t" << definedClass << std::endl;
-            cout << "Classes com erro: \t" << numErrors << std::endl;
-            cout << "Número de classes compiladas: \t" << numbClasses << std::endl;
+            cout << "Classes desconhecidas: \t" << unknownClass << std::endl;
+            cout << "Erros encontrados: \t" << numErrors + semantico->qntdErrors << std::endl;
+            cout << "Número de classes: \t" << numbClasses << std::endl;
             cout << "-------------------------------------------------------------------------------" << std::endl;
         break;
         case 3:
