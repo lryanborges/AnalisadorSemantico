@@ -21,6 +21,7 @@ Segue o passo a passo pra executar o Analisador Semântico em C:
   4. ./analisador semanticTest.txt
 
 Detalhes:
+ - O analisador semântico está sendo utilizado dentro do sintático
  - No passo 2 da execução, o -d é para conseguir gerar o arquivo.h do analisadorSint, que o analisadorLex utiliza pra conhecimento dos tokens/enum.
  - No passo 4 da execução, temos as opções de ler os arquivos:
    1. semanticTest.txt
