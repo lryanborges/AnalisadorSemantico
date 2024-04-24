@@ -18,17 +18,15 @@ Segue o passo a passo pra executar o Analisador Semântico em C:
   1. flex  analisadorLex.l
   2. bison -d analisadorSint.y
   3. g++ lex.yy.c  analisadorSint.tab.c  -std=c++17 -o analisador
-  4. ./analisador semTest.txt
+  4. ./analisador semanticTest.txt
 
 Detalhes:
  - No passo 2 da execução, o -d é para conseguir gerar o arquivo.h do analisadorSint, que o analisadorLex utiliza pra conhecimento dos tokens/enum.
  - No passo 4 da execução, temos as opções de ler os arquivos:
-   1. semTest.txt
+   1. semanticTest.txt
    2. sintTest.txt
    3. finalTest.txt
    4. newTest.txt
-   5. moreTest.txt
-   6. errorTest.txt
- - O arquivo para testes de precedência e sobrecarregamento é o semTest.txt
- - O arquivo errorTest.txt possui erros intencionais, para demonstração.
- - O arquivo moreTest.txt é o que mais possui classes, sendo o verdadeiro arquivo de "teste final".
+   5. errorTest.txt
+ - O arquivo semanticTest.txt possui erros semânticos intencionais, sendo o verdadeiro arquivo de "teste final".
+ - O arquivo errorTest.txt possui erros sintáticos intencionais, para demonstração.
